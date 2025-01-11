@@ -1,11 +1,13 @@
 const {
     FRONT_API_URL = 'http://localhost:3000',
-    NODE_ENV = 'testing',
-    PORT = '3001'
+    JWT_SECRET = 'access_token',
+    PORT = '3001',
+    DATABASE_URL = 'postgresql://postgres.rkegjceuqiskoneismhs:Zeyn.expense-tracker@aws-0-sa-east-1.pooler.supabase.com:6543/postgres'
 } = process.env
 
 module.exports = {
     FRONT_API_URL,
-    NODE_ENV,
-    PORT
+    JWT_SECRET,
+    PORT,
+    DATABASE_URL
 };

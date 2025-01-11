@@ -1,35 +1,31 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+const pool = require('../config/database');
 
-// Definición del modelo de Usuario
-const User = sequelize.define('User', {
-    // Definición de los campos del usuario
-    username: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-    },
-    email: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-        validate: {
-            isEmail: true,
-        },
-    },
-    password: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
-    profileImage: {
-        type: DataTypes.STRING,  // O el tipo adecuado para el campo de la imagen
-        allowNull: true,  // Permite que sea null al principio
+// Función para crear un usuario
+const createUser = async (username, email, password) => {
+    try {
+        const result = await pool.query(
+            `INSERT INTO users (username, email, password)
+                VALUES ($1, $2, $3)
+                RETURNING id, username, email`,
+            [username, email, password]
+        );
+        return result.rows[0];  // Devuelve el usuario creado
+    } catch (error) {
+        throw new Error('Error al crear el usuario: ' + error.message);
     }
-}, {
-    // Opciones adicionales
-    timestamps: true, // Agrega createdAt y updatedAt
-    tableName: 'users', // Nombre de la tabla en la base de datos
-});
+};
 
-// Exportar el modelo
-module.exports = User;
+// Función para obtener un usuario por email
+const getUserByEmail = async (email) => {
+    try {
+        const result = await pool.query(
+            'SELECT * FROM users WHERE email = $1',
+            [email]
+        );
+        return result.rows[0];  // Devuelve el primer usuario encontrado
+    } catch (error) {
+        throw new Error('Error al obtener el usuario: ' + error.message);
+    }
+};
+
+module.exports = { createUser, getUserByEmail };

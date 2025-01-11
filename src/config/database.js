@@ -1,9 +1,15 @@
-const { Sequelize } = require('sequelize');
+const {DATABASE_URL} = require('./config');
 
-// Conexión a la base de datos
-const sequelize = new Sequelize('expense_tracker', 'root', '', {
-    host: 'localhost',  // o la IP del servidor de la base de datos
-    dialect: 'mysql',
+const { Pool } = require('pg');
+
+const pool = new Pool({
+    connectionString: DATABASE_URL,  // Asegúrate de tener esta variable en .env
+    ssl: { rejectUnauthorized: false },
 });
 
-module.exports = sequelize;
+// Verifica la conexión
+pool.connect()
+    .then(() => console.log('Conexión a la base de datos PostgreSQL exitosa'))
+    .catch(err => console.error('Error al conectar a la base de datos: ', err.stack));
+
+module.exports = pool;
