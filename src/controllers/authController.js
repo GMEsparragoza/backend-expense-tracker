@@ -43,7 +43,7 @@ const signin = async (req, res) => {
 
         res.cookie('access_token', token, {
             httpOnly: true,
-            secure: false, // Solo en producción
+            secure: true, // Solo en producción
             sameSite: 'None', // Asegúrate de que SameSite está configurado correctamente
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
         });
