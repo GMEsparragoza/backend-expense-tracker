@@ -5,7 +5,8 @@ const app = express();
 const { PORT, FRONT_API_URL } = require('./config/config');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
-const { JWT_SECRET } = require('./config/config')
+const { JWT_SECRET } = require('./config/config');
+const { mailer } = require('./controllers/mailController');
 
 app.use(express.json());
 app.use(cookieParser());
@@ -29,7 +30,9 @@ app.post('/api/logout', (req, res) => {
 });
 
 // Usar rutas de Informacion
-app.use('/profiles', profileRoutes)
+app.use('/profiles', profileRoutes);
+
+app.post('/api/mailer', mailer);
 
 app.listen(process.env.PORT, () => {
     console.log(`Server running on port ${PORT}`);

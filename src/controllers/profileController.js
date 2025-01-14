@@ -29,6 +29,26 @@ const changePassword = async (req, res) => {
     }
 };
 
+const ResetPassword = async (req, res) => {
+    const { email, newPassword } = req.body;
+    try {
+        const existingUser = await getUserByEmail(email);
+        if (!existingUser) {
+            return res.status(400).json({ message: 'No se encontro el usuario' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
+        const result = await updatePassword(existingUser.id, hashedPassword);
+
+        res.status(201).json({
+            message: 'Contraseña actualizada con exito',
+            datosUser: result
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+    }
+};
+
 const updateInfo = async (req, res) => {
     const { username, name, lastName } = req.body;
     const user = req.user;
@@ -99,4 +119,4 @@ const uploadImage = async (req, res) => {
     }
 }
 
-module.exports = { changePassword, updateInfo, uploadImage };
+module.exports = { changePassword, ResetPassword, updateInfo, uploadImage };

@@ -5,6 +5,7 @@ const verifyToken = require('../middleware/AuthMiddleware');
 const upload = require('../config/multer');
 
 router.post('/changepassword', verifyToken, ProfileController.changePassword);
+router.post('/reset-password', ProfileController.ResetPassword)
 router.post('/updateinfo', verifyToken, ProfileController.updateInfo);
 router.post('/upload-image', verifyToken, upload.single('image'), ProfileController.uploadImage)
 
