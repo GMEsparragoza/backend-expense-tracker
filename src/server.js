@@ -27,6 +27,6 @@ app.post('/api/logout', (req, res) => {
 // Usar rutas de Informacion
 app.use('/profiles', profileRoutes)
 
-app.listen(PORT, () => {
+app.listen(process.env.PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
