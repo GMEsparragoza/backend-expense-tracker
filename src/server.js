@@ -15,6 +15,10 @@ app.use(cors({
     credentials: true // Permite el envío de cookies
 }));
 
+app.get('/', (req, res) => {
+    res.send('Welcome to the API');
+});
+
 // Usar rutas de autenticación
 app.use('/api', authRoutes);
 
