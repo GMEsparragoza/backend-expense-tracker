@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const {JWT_SECRET} = require('../config/config')
 
 const verifyToken = (req, res, next) => {
     const token = req.cookies ? req.cookies.access_token : null; // Acceder al token desde la cookie
@@ -7,10 +8,10 @@ const verifyToken = (req, res, next) => {
         return res.status(401).json({ message: 'Token no proporcionado' });
     }
 
-    jwt.verify(token, 'access_token', (err, decoded) => {
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
         if (err) {
             console.log("No hay usuario Autenticado");
-            return res.status(401).json({ message: 'Token no válido' });
+            return res.status(402).json({ message: 'Token no válido' });
         } 
 
         req.user = decoded; // Agregar la información del usuario al objeto de la solicitud

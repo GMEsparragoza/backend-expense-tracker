@@ -57,4 +57,34 @@ const signin = async (req, res) => {
     }
 };
 
-module.exports = { signup, signin };
+const auth = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ message: 'No estás autenticado' });
+        }
+        // Obtener los datos completos del usuario por su email
+        const user = await getUserByEmail(req.user.email);
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Devolver solo los datos necesarios (por ejemplo, nombre, apellido)
+        const userData = {
+            username: user.username,
+            email: user.email,
+            name: user.name,
+            lastName: user.lastname,
+            imageLink: user.profile_image
+        };
+        res.json({
+            message: 'Usuario Autenticado',
+            user: userData
+        });
+    } catch (err) {
+        // Manejo de errores en la obtención de datos
+        console.error(err);
+        res.status(500).json({ message: 'Error al obtener los datos del usuario', error: err });
+    }
+}
+
+module.exports = { signup, signin, auth };

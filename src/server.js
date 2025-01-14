@@ -4,7 +4,8 @@ const cookieParser = require('cookie-parser')
 const app = express();
 const { PORT, FRONT_API_URL } = require('./config/config');
 const authRoutes = require('./routes/authRoutes');
-const verifyToken = require('./middleware/AuthMiddleware');
+const profileRoutes = require('./routes/profileRoutes');
+const { JWT_SECRET } = require('./config/config')
 
 app.use(express.json());
 app.use(cookieParser());
@@ -17,19 +18,14 @@ app.use(cors({
 // Usar rutas de autenticación
 app.use('/api', authRoutes);
 
-// Ruta protegida para obtener los datos del perfil del usuario
-app.use('/api/auth', verifyToken); // Aplicamos el middleware solo aquí
-app.get('/api/auth', (req, res) => {
-    if (!req.user) {
-        return res.status(401).json({ message: 'No estás autenticado' });
-    }
-    res.json({ message: 'Usuario Autenticado', user: req.user });
-});
-
+// Ruta para cerrar sesion del usuario
 app.post('/api/logout', (req, res) => {
-    res.clearCookie('access_token'); // Eliminar la cookie del token
+    res.clearCookie(JWT_SECRET); // Eliminar la cookie del token
     res.status(200).json({ message: 'Sesión cerrada exitosamente' });
 });
+
+// Usar rutas de Informacion
+app.use('/profiles', profileRoutes)
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
