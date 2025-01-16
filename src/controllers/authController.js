@@ -56,7 +56,15 @@ const signin = async (req, res) => {
             res.cookie('2fa_token', token, {
                 httpOnly: true,
                 secure: true,
-                samesite: 'None'
+                samesite: 'None',
+                maxAge: 15 * 60 * 1000 // 15 Minutos
+            });
+            
+            console.log('Cookie configurada:', {
+                httpOnly: true,
+                secure: true,
+                samesite: 'None',
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
             });
 
             try {
@@ -81,10 +89,17 @@ const signin = async (req, res) => {
         };
         const token = jwt.sign(tokenPayload, JWT_SECRET_AUTH, { expiresIn: '7d' });
 
-        res.cookie('access_token', token, {
+        res.cookie('2fa_token', token, {
             httpOnly: true,
-            secure: true, // Solo en producción
-            samesite: 'None', // Asegúrate de que SameSite está configurado correctamente
+            secure: true,
+            samesite: 'None',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
+        });
+        
+        console.log('Cookie configurada:', {
+            httpOnly: true,
+            secure: true,
+            samesite: 'None',
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
         });
 
@@ -131,10 +146,17 @@ const verify2FA = async (req, res) => {
         const sessionToken = jwt.sign(tokenPayload, JWT_SECRET_AUTH, { expiresIn: '7d' });
 
         // Configurar la cookie con el token de sesión
-        res.cookie('access_token', sessionToken, {
+        res.cookie('2fa_token', token, {
             httpOnly: true,
-            secure: true, // Solo en producción
-            samesite: 'None', // Configurar SameSite según tus necesidades
+            secure: true,
+            samesite: 'None',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
+        });
+        
+        console.log('Cookie configurada:', {
+            httpOnly: true,
+            secure: true,
+            samesite: 'None',
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
         });
 
