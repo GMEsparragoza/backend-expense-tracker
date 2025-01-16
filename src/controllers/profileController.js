@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const { getUserByEmail, getUserByUsername, updatePassword, updateInfoUser, updateImageUser } = require('../models/User');
+const { getUserByEmail, getUserByUsername, updatePassword, updateInfoUser, updateImageUser, update2FAUser } = require('../models/User');
 const { IMGUR_ID } = require('../config/config');
 const axios = require('axios')
 
@@ -119,4 +119,50 @@ const uploadImage = async (req, res) => {
     }
 }
 
-module.exports = { changePassword, ResetPassword, updateInfo, uploadImage };
+const enable2FA = async (req, res) => {
+    const user = req.user;
+    try {
+        if (user.id <= 0) {
+            throw new Error('ID de usuario inválido');
+        }
+        const result = await update2FAUser(user.id, true);
+        return res.status(200).json({
+            datosUser: result,
+            message: 'Verificacion en dos pasos activada',
+        });
+    } catch (error) {
+        console.error('Error al activar 2FA:', {
+            message: error.message,
+            responseData: error.response?.data,
+        });
+        return res.status(500).json({
+            message: 'Ocurrió un error al activar la 2FA.',
+            error: error.response?.data || error.message,
+        });
+    }
+}
+
+const disable2FA = async (req, res) => {
+    const user = req.user;
+    try {
+        if (user.id <= 0) {
+            throw new Error('ID de usuario inválido');
+        }
+        const result = await update2FAUser(user.id, false);
+        return res.status(200).json({
+            datosUser: result,
+            message: 'Verificacion en dos pasos desactivada',
+        });
+    } catch (error) {
+        console.error('Error al desactivar 2FA:', {
+            message: error.message,
+            responseData: error.response?.data,
+        });
+        return res.status(500).json({
+            message: 'Ocurrió un error al desactivar la 2FA.',
+            error: error.response?.data || error.message,
+        });
+    }
+}
+
+module.exports = { changePassword, ResetPassword, updateInfo, uploadImage, enable2FA, disable2FA };

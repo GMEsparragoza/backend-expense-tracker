@@ -126,4 +126,23 @@ const updateImageUser = async (email, imageLink) => {
     }
 }
 
-module.exports = { createUser, getUserByEmail, getUserByUsername, updatePassword, updateInfoUser, updateImageUser };
+const update2FAUser = async (idUser, type) => {
+    try {
+        const result = await pool.query(
+            `UPDATE users
+                SET verified = $1,
+                    two_fa = $1
+                WHERE id = $2
+                RETURNING id, username, email`,
+            [type, idUser]
+        );
+        if (result.rows.length === 0) {
+            throw new Error('Usuario no encontrado');
+        }
+        return result.rows[0]; // Devuelve el usuario actualizado
+    } catch (error) {
+        throw new Error('Error al actualizar la verificacion en dos pasos: ' + error.message);
+    }
+}
+
+module.exports = { createUser, getUserByEmail, getUserByUsername, updatePassword, updateInfoUser, updateImageUser, update2FAUser };
