@@ -56,7 +56,7 @@ const signin = async (req, res) => {
             res.cookie('2fa_token', token, {
                 httpOnly: true,
                 secure: true,
-                sameSite: 'None'
+                SameSite: 'None'
             });
 
             try {
@@ -84,7 +84,7 @@ const signin = async (req, res) => {
         res.cookie('access_token', token, {
             httpOnly: true,
             secure: true, // Solo en producción
-            sameSite: 'None', // Asegúrate de que SameSite está configurado correctamente
+            SameSite: 'None', // Asegúrate de que SameSite está configurado correctamente
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
         });
 
@@ -134,7 +134,7 @@ const verify2FA = async (req, res) => {
         res.cookie('access_token', sessionToken, {
             httpOnly: true,
             secure: true, // Solo en producción
-            sameSite: 'None', // Configurar SameSite según tus necesidades
+            SameSite: 'None', // Configurar SameSite según tus necesidades
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
         });
 
