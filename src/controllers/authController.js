@@ -89,7 +89,7 @@ const signin = async (req, res) => {
         };
         const token = jwt.sign(tokenPayload, JWT_SECRET_AUTH, { expiresIn: '7d' });
 
-        res.cookie('2fa_token', token, {
+        res.cookie('access_token', token, {
             httpOnly: true,
             secure: true,
             sameSite: 'None',
@@ -146,7 +146,7 @@ const verify2FA = async (req, res) => {
         const sessionToken = jwt.sign(tokenPayload, JWT_SECRET_AUTH, { expiresIn: '7d' });
 
         // Configurar la cookie con el token de sesión
-        res.cookie('2fa_token', sessionToken, {
+        res.cookie('access_token', sessionToken, {
             httpOnly: true,
             secure: true,
             sameSite: 'None',
