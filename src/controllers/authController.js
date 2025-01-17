@@ -56,14 +56,14 @@ const signin = async (req, res) => {
             res.cookie('2fa_token', token, {
                 httpOnly: true,
                 secure: true,
-                samesite: 'None',
+                sameSite: 'None',
                 maxAge: 15 * 60 * 1000 // 15 Minutos
             });
             
             console.log('Cookie configurada:', {
                 httpOnly: true,
                 secure: true,
-                samesite: 'None',
+                sameSite: 'None',
                 maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
             });
 
@@ -92,14 +92,14 @@ const signin = async (req, res) => {
         res.cookie('2fa_token', token, {
             httpOnly: true,
             secure: true,
-            samesite: 'None',
+            sameSite: 'None',
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
         });
         
         console.log('Cookie configurada:', {
             httpOnly: true,
             secure: true,
-            samesite: 'None',
+            sameSite: 'None',
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
         });
 
@@ -146,17 +146,17 @@ const verify2FA = async (req, res) => {
         const sessionToken = jwt.sign(tokenPayload, JWT_SECRET_AUTH, { expiresIn: '7d' });
 
         // Configurar la cookie con el token de sesión
-        res.cookie('2fa_token', token, {
+        res.cookie('2fa_token', sessionToken, {
             httpOnly: true,
             secure: true,
-            samesite: 'None',
+            sameSite: 'None',
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
         });
         
         console.log('Cookie configurada:', {
             httpOnly: true,
             secure: true,
-            samesite: 'None',
+            sameSite: 'None',
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
         });
 
