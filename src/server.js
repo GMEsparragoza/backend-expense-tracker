@@ -23,7 +23,11 @@ app.use('/api', authRoutes);
 
 // Ruta para cerrar sesion del usuario
 app.post('/api/logout', (req, res) => {
-    res.clearCookie('access_token'); // Eliminar la cookie del token
+    res.clearCookie('access_token', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None'
+    }); // Eliminar la cookie del token de la Sesion
     res.status(200).json({ message: 'Sesión cerrada exitosamente' });
 });
 

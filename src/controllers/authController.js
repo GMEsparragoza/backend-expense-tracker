@@ -161,7 +161,11 @@ const verify2FA = async (req, res) => {
         });
 
         // Limpiar la cookie del token de 2FA
-        res.clearCookie('2fa_token');
+        res.clearCookie('2fa_token',{
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None'
+        });
 
         res.send({ message: '2FA verification successful, session started.' });
 
