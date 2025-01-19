@@ -1,24 +1,78 @@
 const bcrypt = require('bcrypt');
-const { getUserByEmail, getUserByUsername, updatePassword, updateInfoUser, updateImageUser, update2FAUser } = require('../models/User');
+const {
+    getUserByEmail,
+    getUserByUsername,
+    updatePassword,
+    updateInfoUser,
+    updateImageUser,
+    Enable2FAUser,
+    Disable2FAUser
+} = require('../models/User');
 const { IMGUR_ID } = require('../config/config');
 const axios = require('axios')
+const { verifyUser2FA } = require('../middleware/2FAMiddleware');
+const { JWT_SECRET_2FA } = require('../config/config');
+const jwt = require('jsonwebtoken');
 
 const changePassword = async (req, res) => {
     const { password, newPassword } = req.body;
-    const user = req.user;
+    const tokenUser = req.user;
     try {
-        const existingUser = await getUserByEmail(user.email);
-        if (!existingUser) {
+        const user = await getUserByEmail(tokenUser.email);
+        if (!user) {
             return res.status(400).json({ message: 'No se encontro el usuario' });
         }
 
-        const passwordValid = await bcrypt.compare(password, existingUser.password);
+        const passwordValid = await bcrypt.compare(password, user.password);
         if (!passwordValid) {
             return res.status(401).json({ message: 'Contraseña incorrecta' });
         }
 
+        // Verificar si el usuario tiene habilitada la verificación en dos pasos
+        if (user.two_fa) {
+            // Invocar el middleware de 2FA
+            return verifyUser2FA(req, res, user)
+                .then(() => {
+                    res.send({ message: 'Please enter the 2FA code sent to your email.', twoFARequired: true });
+                })
+                .catch((error) => {
+                    res.status(500).json({ message: 'Error al enviar el código de verificación', error });
+                });
+        }
+
         const hashedPassword = await bcrypt.hash(newPassword, 12);
-        const result = await updatePassword(existingUser.id, hashedPassword);
+        const result = await updatePassword(user.id, hashedPassword);
+
+        res.status(201).json({
+            message: 'Contraseña actualizada con exito',
+            datosUser: result
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+    }
+};
+
+const confirmChangePassword2FA = async (req, res) => {
+    const { newPassword, code } = req.body;
+    const user = req.user;
+
+    // Recuperar el token de la cookie
+    const token = req.cookies['2fa_token'];
+
+    if (!token) {
+        return res.status(400).send({ message: '2FA verification token is missing.' });
+    }
+    try {
+        // Verificar y decodificar el token
+        const decoded = jwt.verify(token, JWT_SECRET_2FA);
+
+        // Verificar si el código coincide
+        if (decoded.code !== code) {
+            return res.status(401).send({ message: 'Invalid 2FA code.' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
+        const result = await updatePassword(user.id, hashedPassword);
 
         res.status(201).json({
             message: 'Contraseña actualizada con exito',
@@ -125,7 +179,7 @@ const enable2FA = async (req, res) => {
         if (user.id <= 0) {
             throw new Error('ID de usuario inválido');
         }
-        const result = await update2FAUser(user.id, true);
+        const result = await Enable2FAUser(user.id);
         return res.status(200).json({
             datosUser: result,
             message: 'Verificacion en dos pasos activada',
@@ -148,7 +202,7 @@ const disable2FA = async (req, res) => {
         if (user.id <= 0) {
             throw new Error('ID de usuario inválido');
         }
-        const result = await update2FAUser(user.id, false);
+        const result = await Disable2FAUser(user.id);
         return res.status(200).json({
             datosUser: result,
             message: 'Verificacion en dos pasos desactivada',
@@ -165,4 +219,4 @@ const disable2FA = async (req, res) => {
     }
 }
 
-module.exports = { changePassword, ResetPassword, updateInfo, uploadImage, enable2FA, disable2FA };
+module.exports = { changePassword, confirmChangePassword2FA, ResetPassword, updateInfo, uploadImage, enable2FA, disable2FA };

@@ -1,20 +1,14 @@
 const { JWT_SECRET_AUTH, JWT_SECRET_2FA } = require('../config/config');
 const bcrypt = require('bcrypt');
+const { verifyUser2FA } = require('../middleware/2FAMiddleware'); // Asegúrate de exportar la función verify2FA desde el middleware
 const jwt = require('jsonwebtoken');
-const { createUser, getUserByEmail, getUserByUsername } = require('../models/User');
-const crypto = require('crypto');
-const { sendEmail } = require('../services/emailService');
+const { createUser, getUserByEmail, getUserByUsername, deleteUser } = require('../models/User');
 
-// Generar código aleatorio de 6 dígitos
-const generate2FACode = () => {
-    return crypto.randomInt(100000, 999999).toString();
-};
-
-const signup = async (req, res) => {
-    const { username, email, password } = req.body;
+const verifyDataNewUser = async (req, res) => {
+    const { username, email } = req.body;
     try {
-        const existingUser = await getUserByEmail(email);
-        if (existingUser) {
+        const existingEmail = await getUserByEmail(email);
+        if (existingEmail) {
             return res.status(400).json({ message: 'El email ya esta registrado' });
         }
 
@@ -22,7 +16,15 @@ const signup = async (req, res) => {
         if (userUsed) {
             return res.status(401).json({ message: 'El nombre de usuario esta en uso' });
         }
+        return res.send({ message: 'Please enter the 2FA code sent to your email.', twoFARequired: true });
+    } catch (error) {
+        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+    }
+}
 
+const signup = async (req, res) => {
+    const { username, email, password } = req.body;
+    try {
         const hashedPassword = await bcrypt.hash(password, 12);
         await createUser(username, email, hashedPassword);  // null si no tiene imagen de perfil
 
@@ -48,38 +50,14 @@ const signin = async (req, res) => {
 
         // Verificar si el usuario tiene habilitada la verificación en dos pasos
         if (user.two_fa) {
-            // Generar un código aleatorio de 6 dígitos
-            const code = generate2FACode();
-
-            const token = jwt.sign({ code }, JWT_SECRET_2FA, { expiresIn: '15m' });
-
-            res.cookie('2fa_token', token, {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'None',
-                maxAge: 15 * 60 * 1000 // 15 Minutos
-            });
-            
-            console.log('Cookie configurada:', {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'None',
-                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
-            });
-
-            try {
-                const html = `
-                    <h1>2FA code for your account:</h1>
-                    <h3 style="color:rgb(181, 18, 18);"><b>${code}</b></h3>
-                `;
-                await sendEmail(email, 'Your 2FA Code', html);
-
-            } catch (error) {
-                console.error('Error sending email:', error);
-            }
-
-            // Responder indicando que se requiere el código de verificación
-            return res.send({ message: 'Please enter the 2FA code sent to your email.', twoFARequired: true });
+            // Invocar el middleware de 2FA
+            return verifyUser2FA(req, res, user)
+                .then(() => {
+                    res.send({ message: 'Please enter the 2FA code sent to your email.', twoFARequired: true });
+                })
+                .catch((error) => {
+                    res.status(500).json({ message: 'Error al enviar el código de verificación', error });
+                });
         }
 
         const tokenPayload = {
@@ -87,28 +65,20 @@ const signin = async (req, res) => {
             email: user.email,
             username: user.username,
         };
+
         const token = jwt.sign(tokenPayload, JWT_SECRET_AUTH, { expiresIn: '7d' });
 
+        // Almacenar el token en una cookie
         res.cookie('access_token', token, {
             httpOnly: true,
             secure: true,
             sameSite: 'None',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
-        });
-        
-        console.log('Cookie configurada:', {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'None',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
+            maxAge: 7 * 24 *60 * 60 * 1000 // 7 Dias
         });
 
-        res.status(200).json({
-            message: 'Sesión iniciada correctamente',
-            data: tokenPayload,
-        });
+        res.json({ message: 'Inicio de sesión exitoso' });
     } catch (error) {
-        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+        res.status(500).json({ message: 'Error en el servidor', error });
     }
 };
 
@@ -127,7 +97,7 @@ const verify2FA = async (req, res) => {
         const decoded = jwt.verify(token, JWT_SECRET_2FA);
 
         // Verificar si el código coincide
-        if (decoded.code !== code) {
+        if (decoded.code != code) {
             return res.status(400).send({ message: 'Invalid 2FA code.' });
         }
 
@@ -152,16 +122,9 @@ const verify2FA = async (req, res) => {
             sameSite: 'None',
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
         });
-        
-        console.log('Cookie configurada:', {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'None',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
-        });
 
         // Limpiar la cookie del token de 2FA
-        res.clearCookie('2fa_token',{
+        res.clearCookie('2fa_token', {
             httpOnly: true,
             secure: true,
             sameSite: 'None'
@@ -206,4 +169,65 @@ const auth = async (req, res) => {
     }
 }
 
-module.exports = { signup, signin, verify2FA, auth };
+const deleteAccount = async (req, res) => {
+    const tokenUser = req.user;
+    try {
+        if (!tokenUser) {
+            return res.status(401).json({ message: 'No estás autenticado' });
+        }
+        // Obtener los datos completos del usuario por su email
+        const user = await getUserByEmail(req.user.email);
+        if (!user) {
+            return res.status(403).json({ message: 'Usuario no encontrado' });
+        }
+        if(user.two_fa){
+            return res.send({ message: 'Please enter the 2FA code sent to your email.', twoFARequired: true });
+        }
+
+        // Eliminar la cuenta del usuario
+        await deleteUser(user.id);
+
+        res.clearCookie('access_token', {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None'
+        });
+
+        res.json({
+            message: 'Cuenta eliminada con éxito'
+        });
+    } catch (err) {
+        // Manejo de errores en la obtención de datos
+        console.error(err);
+        res.status(500).json({ message: 'Error al eliminar la cuenta', error: err });
+    }
+}
+
+const confirmDeleteAccount = async (req, res) => {
+    try {
+        // Obtener los datos completos del usuario por su email
+        const user = await getUserByEmail(req.user.email);
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Eliminar la cuenta del usuario
+        await deleteUser(user.id);
+
+        res.clearCookie('access_token', {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None'
+        });
+
+        res.json({
+            message: 'Cuenta eliminada con éxito'
+        });
+    } catch (err) {
+        // Manejo de errores en la obtención de datos
+        console.error(err);
+        res.status(500).json({ message: 'Error al eliminar la cuenta', error: err });
+    }
+}
+
+module.exports = { signup, signin, verify2FA, auth, deleteAccount, confirmDeleteAccount, verifyDataNewUser };

@@ -4,10 +4,10 @@ const pool = require('../config/database');
 const createUser = async (username, email, password) => {
     try {
         const result = await pool.query(
-            `INSERT INTO users (username, email, password, name, lastname)
-                VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO users (username, email, password, name, lastname, verified)
+                VALUES ($1, $2, $3, $4, $5, $6)
                 RETURNING id, username, email`,
-            [username, email, password, '', '']
+            [username, email, password, '', '', true]
         );
         return result.rows[0];  // Devuelve el usuario creado
     } catch (error) {
@@ -126,23 +126,58 @@ const updateImageUser = async (email, imageLink) => {
     }
 }
 
-const update2FAUser = async (idUser, type) => {
+const Enable2FAUser = async (idUser) => {
     try {
         const result = await pool.query(
             `UPDATE users
-                SET verified = $1,
-                    two_fa = $1
-                WHERE id = $2
+                SET two_fa = true
+                WHERE id = $1
                 RETURNING id, username, email`,
-            [type, idUser]
+            [idUser]
         );
         if (result.rows.length === 0) {
             throw new Error('Usuario no encontrado');
         }
         return result.rows[0]; // Devuelve el usuario actualizado
     } catch (error) {
-        throw new Error('Error al actualizar la verificacion en dos pasos: ' + error.message);
+        throw new Error('Error al activar la verificacion en dos pasos: ' + error.message);
     }
 }
 
-module.exports = { createUser, getUserByEmail, getUserByUsername, updatePassword, updateInfoUser, updateImageUser, update2FAUser };
+const Disable2FAUser = async (idUser) => {
+    try {
+        const result = await pool.query(
+            `UPDATE users
+                SET two_fa = false
+                WHERE id = $1
+                RETURNING id, username, email`,
+            [idUser]
+        );
+        if (result.rows.length === 0) {
+            throw new Error('Usuario no encontrado');
+        }
+        return result.rows[0]; // Devuelve el usuario actualizado
+    } catch (error) {
+        throw new Error('Error al desactivar la verificacion en dos pasos: ' + error.message);
+    }
+}
+
+const deleteUser = async (userId) => {
+    try {
+        const result = await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+    } catch (error) {
+        throw new Error('Error al eliminar el usuario: ' + error.message);
+    }
+}
+
+module.exports = {
+    createUser,
+    getUserByEmail,
+    getUserByUsername,
+    updatePassword,
+    updateInfoUser,
+    updateImageUser,
+    Enable2FAUser,
+    Disable2FAUser,
+    deleteUser
+};
