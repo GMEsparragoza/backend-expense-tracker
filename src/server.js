@@ -5,6 +5,7 @@ const app = express();
 const { PORT, FRONT_API_URL } = require('./config/config');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+const expenseRoutes = require('./routes/expenseRoutes');
 
 app.use(express.json());
 app.use(cookieParser());
@@ -18,8 +19,12 @@ app.get('/', (req, res) => {
     res.send('Welcome to the API');
 });
 
-// Usar rutas de autenticación
+// Manejo de rutas
 app.use('/api', authRoutes);
+
+app.use('/profiles', profileRoutes);
+
+app.use('/expense', expenseRoutes);
 
 // Ruta para cerrar sesion del usuario
 app.post('/api/logout', (req, res) => {
@@ -30,9 +35,6 @@ app.post('/api/logout', (req, res) => {
     }); // Eliminar la cookie del token de la Sesion
     res.status(200).json({ message: 'Sesión cerrada exitosamente' });
 });
-
-// Usar rutas de Informacion
-app.use('/profiles', profileRoutes);
 
 app.listen(process.env.PORT, () => {
     console.log(`Server running on port ${PORT}`);
