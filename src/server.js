@@ -32,7 +32,12 @@ app.post('/api/logout', (req, res) => {
         httpOnly: true,
         secure: true,
         sameSite: 'None'
-    }); // Eliminar la cookie del token de la Sesion
+    });
+    res.clearCookie('refresh_token', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None'
+    }); // Eliminar las cookies de los tokens de la Sesion
     res.status(200).json({ message: 'Sesión cerrada exitosamente' });
 });
 

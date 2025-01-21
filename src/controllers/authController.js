@@ -1,4 +1,4 @@
-const { JWT_SECRET_AUTH, JWT_SECRET_2FA } = require('../config/config');
+const { JWT_SECRET_AUTH, JWT_SECRET_REFRESH, JWT_SECRET_2FA } = require('../config/config');
 const bcrypt = require('bcrypt');
 const { verifyUser2FA } = require('../middleware/2FAMiddleware'); // Asegúrate de exportar la función verify2FA desde el middleware
 const jwt = require('jsonwebtoken');
@@ -66,14 +66,21 @@ const signin = async (req, res) => {
             username: user.username,
         };
 
-        const token = jwt.sign(tokenPayload, JWT_SECRET_AUTH, { expiresIn: '7d' });
+        const token = jwt.sign(tokenPayload, JWT_SECRET_AUTH, { expiresIn: '15m' });
+        const refreshToken = jwt.sign(tokenPayload, JWT_SECRET_REFRESH, { expiresIn: '7d' });
 
         // Almacenar el token en una cookie
         res.cookie('access_token', token, {
             httpOnly: true,
             secure: true,
             sameSite: 'None',
-            maxAge: 7 * 24 *60 * 60 * 1000 // 7 Dias
+            maxAge: 15 * 60 * 1000 // 15 Minutos
+        });
+        res.cookie('refresh_token', refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 Dias
         });
 
         res.json({ message: 'Inicio de sesión exitoso' });
@@ -113,14 +120,21 @@ const verify2FA = async (req, res) => {
             email: user.email,
             username: user.username,
         };
-        const sessionToken = jwt.sign(tokenPayload, JWT_SECRET_AUTH, { expiresIn: '7d' });
+        const sessionToken = jwt.sign(tokenPayload, JWT_SECRET_AUTH, { expiresIn: '15m' });
+        const refreshToken = jwt.sign(tokenPayload, JWT_SECRET_REFRESH, { expiresIn: '7d' });
 
         // Configurar la cookie con el token de sesión
         res.cookie('access_token', sessionToken, {
             httpOnly: true,
             secure: true,
+            sameSite: 'Lax',
+            maxAge: 15 * 60 * 1000 // 15 Minutos
+        });
+        res.cookie('refresh_token', refreshToken, {
+            httpOnly: true,
+            secure: true,
             sameSite: 'None',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 días
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 Dias
         });
 
         // Limpiar la cookie del token de 2FA
@@ -180,7 +194,7 @@ const deleteAccount = async (req, res) => {
         if (!user) {
             return res.status(403).json({ message: 'Usuario no encontrado' });
         }
-        if(user.two_fa){
+        if (user.two_fa) {
             return res.send({ message: 'Please enter the 2FA code sent to your email.', twoFARequired: true });
         }
 
@@ -188,6 +202,11 @@ const deleteAccount = async (req, res) => {
         await deleteUser(user.id);
 
         res.clearCookie('access_token', {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None'
+        });
+        res.clearCookie('refresh_token', {
             httpOnly: true,
             secure: true,
             sameSite: 'None'
@@ -219,6 +238,11 @@ const confirmDeleteAccount = async (req, res) => {
             secure: true,
             sameSite: 'None'
         });
+        res.clearCookie('refresh_token', {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None'
+        });
 
         res.json({
             message: 'Cuenta eliminada con éxito'
@@ -230,4 +254,36 @@ const confirmDeleteAccount = async (req, res) => {
     }
 }
 
-module.exports = { signup, signin, verify2FA, auth, deleteAccount, confirmDeleteAccount, verifyDataNewUser };
+const refreshTokens = async (req, res) => {
+    const refreshToken = req.cookies ? req.cookies.refresh_token : null;
+
+    if (!refreshToken) {
+        return res.status(401).json({ message: 'Refresh Token no proporcionado' });
+    }
+
+    jwt.verify(refreshToken, JWT_SECRET_REFRESH, (err, decoded) => {
+        if (err) {
+            return res.status(403).json({ message: 'Refresh Token no válido' });
+        }
+
+        const newAccessToken = jwt.sign({ id: decoded.id }, JWT_SECRET_AUTH, { expiresIn: '15m' });
+        const newRefreshToken = jwt.sign({ id: decoded.id }, JWT_SECRET_REFRESH, { expiresIn: '7d' });
+
+        res.cookie('access_token', newAccessToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None',
+            maxAge: 15 * 60 * 1000 // 15 Minutos
+        });
+        res.cookie('refresh_token', newRefreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 Dias
+        });
+
+        res.json({ message: 'Token renovado' });
+    });
+}
+
+module.exports = { signup, signin, verify2FA, auth, deleteAccount, confirmDeleteAccount, verifyDataNewUser, refreshTokens };

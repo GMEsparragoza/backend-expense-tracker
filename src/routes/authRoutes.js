@@ -12,5 +12,6 @@ router.post('/mailer', mailer)
 router.post('/delete-account', verifyToken, AuthController.deleteAccount)
 router.post('/confirm-delete-account', verifyToken, AuthController.confirmDeleteAccount)
 router.post('/verify-new-user', AuthController.verifyDataNewUser)
+router.post('/refresh-token', AuthController.refreshTokens);
 
 module.exports = router;
