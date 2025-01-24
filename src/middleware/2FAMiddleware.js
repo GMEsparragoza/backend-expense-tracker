@@ -19,7 +19,7 @@ const verifyUser2FA = (req, res, user) => {
             res.cookie('2fa_token', token, {
                 httpOnly: true,
                 secure: true,
-                sameSite: 'Lax',
+                sameSite: 'None',
                 maxAge: 15 * 60 * 1000 // 15 Minutos
             });
 
