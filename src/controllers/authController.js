@@ -127,7 +127,7 @@ const verify2FA = async (req, res) => {
         res.cookie('access_token', sessionToken, {
             httpOnly: true,
             secure: true,
-            sameSite: 'Lax',
+            sameSite: 'None',
             maxAge: 15 * 60 * 1000 // 15 Minutos
         });
         res.cookie('refresh_token', refreshToken, {

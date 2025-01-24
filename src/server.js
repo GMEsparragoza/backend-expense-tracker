@@ -5,7 +5,7 @@ const app = express();
 const { PORT, FRONT_API_URL } = require('./config/config');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
-const expenseRoutes = require('./routes/expenseRoutes');
+const transactionRoutes = require('./routes/transactionRoutes');
 
 app.use(express.json());
 app.use(cookieParser());
@@ -24,7 +24,7 @@ app.use('/api', authRoutes);
 
 app.use('/profiles', profileRoutes);
 
-app.use('/expense', expenseRoutes);
+app.use('/transaction', transactionRoutes);
 
 // Ruta para cerrar sesion del usuario
 app.post('/api/logout', (req, res) => {

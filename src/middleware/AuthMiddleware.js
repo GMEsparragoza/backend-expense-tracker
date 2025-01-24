@@ -32,13 +32,13 @@ const verifyToken = (req, res, next) => {
                 res.cookie('access_token', newAccessToken, {
                     httpOnly: true,
                     secure: true,
-                    sameSite: 'None',
+                    sameSite: 'Lax',
                     maxAge: 15 * 60 * 1000 // 15 Minutos
                 });
                 res.cookie('refresh_token', newRefreshToken, {
                     httpOnly: true,
                     secure: true,
-                    sameSite: 'None',
+                    sameSite: 'Lax',
                     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 Dias
                 });
 
