@@ -31,6 +31,33 @@ const getExpensesByDate = async (start, end, user) => {
     }
 }
 
+const updateDataExpense = async (data, date, userID) => {
+    try {
+        const result = await pool.query(
+            `UPDATE expenses
+                SET amount = $1,
+                    category = $2,
+                    date = $3,
+                    description = $4
+                WHERE id = $5 AND user_id = $6 
+                RETURNING id, date`,
+            [data.amount, data.category, date, data.description, data.id, userID]
+        );
+        return result;
+    }
+    catch (error) {
+        throw new Error('Error al Actualizar el Gasto: ' + error.message);
+    }
+}
+
+const deleteExpenseByID = async (id, userID) => {
+    try {
+        await pool.query('DELETE FROM expenses WHERE id = $1 AND user_id = $2', [id, userID]);
+    } catch (error) {
+        throw new Error('Error al eliminar el Gasto: ' + error.message);
+    }
+}
+
 const getBalanceExpensesQuery = async (start, end, user) => {
     try {
         const { rows } = await pool.query(`
@@ -46,4 +73,4 @@ const getBalanceExpensesQuery = async (start, end, user) => {
     }
 };
 
-module.exports = { createExpense, getExpensesByDate, getBalanceExpensesQuery };
+module.exports = { createExpense, getExpensesByDate, updateDataExpense, deleteExpenseByID, getBalanceExpensesQuery };

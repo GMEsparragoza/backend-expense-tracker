@@ -164,7 +164,7 @@ const Disable2FAUser = async (idUser) => {
 
 const deleteUser = async (userId) => {
     try {
-        const result = await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+        await pool.query('DELETE FROM users WHERE id = $1', [userId]);
     } catch (error) {
         throw new Error('Error al eliminar el usuario: ' + error.message);
     }
