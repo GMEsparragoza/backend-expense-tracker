@@ -31,18 +31,10 @@ const verifyToken = (req, res, next) => {
                 console.log("Access Token:", newAccessToken);
                 console.log("Refresh Token:", newRefreshToken);
                 // Send new tokens in response or set them in cookies
-                res.cookie('access_token', newAccessToken, {
-                    httpOnly: true,
-                    secure: true,
-                    sameSite: 'None',
-                    maxAge: 15 * 60 * 1000 // 15 Minutos
-                });
-                res.cookie('refresh_token', newRefreshToken, {
-                    httpOnly: true,
-                    secure: true,
-                    sameSite: 'None',
-                    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 Dias
-                });
+                res.setHeader('Set-Cookie', [
+                    `access_token=${newAccessToken}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=900`,
+                    `refresh_token=${newRefreshToken}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=604800`,
+                ]);
                 console.log("Nuevos tokens enviados a las cookies")
 
                 req.user = decodedRefresh; // Optional: Use the refreshed token data
