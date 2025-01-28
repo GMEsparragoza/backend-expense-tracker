@@ -28,7 +28,8 @@ const verifyToken = (req, res, next) => {
                 const newAccessToken = jwt.sign(tokenPayload, JWT_SECRET_AUTH, { expiresIn: '15m' });
                 // Optional: Refresh the Refresh Token
                 const newRefreshToken = jwt.sign(tokenPayload, JWT_SECRET_REFRESH, { expiresIn: '7d' });
-                console.log("Nuevos tokens creados")
+                console.log("Access Token:", newAccessToken);
+                console.log("Refresh Token:", newRefreshToken);
                 // Send new tokens in response or set them in cookies
                 res.cookie('access_token', newAccessToken, {
                     httpOnly: true,
