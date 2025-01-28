@@ -6,6 +6,7 @@ const { PORT, FRONT_API_URL } = require('./config/config');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
+const { mailer } = require('./controllers/mailController');
 
 app.use(express.json());
 app.use(cookieParser());
@@ -26,20 +27,7 @@ app.use('/profiles', profileRoutes);
 
 app.use('/transaction', transactionRoutes);
 
-// Ruta para cerrar sesion del usuario
-app.post('/api/logout', (req, res) => {
-    res.clearCookie('access_token', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'None'
-    });
-    res.clearCookie('refresh_token', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'None'
-    }); // Eliminar las cookies de los tokens de la Sesion
-    res.status(200).json({ message: 'Sesión cerrada exitosamente' });
-});
+app.post('/api/mailer', mailer)
 
 app.listen(process.env.PORT, () => {
     console.log(`Server running on port ${PORT}`);

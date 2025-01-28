@@ -74,11 +74,22 @@ const confirmChangePassword2FA = async (req, res) => {
         const hashedPassword = await bcrypt.hash(newPassword, 12);
         const result = await updatePassword(user.id, hashedPassword);
 
+        res.clearCookie('2fa_token', {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None'
+        });
+
         res.status(201).json({
             message: 'Contraseña actualizada con exito',
             datosUser: result
         });
     } catch (error) {
+        // Manejar errores específicos del token
+        if (error.name === 'TokenExpiredError') {
+            return res.status(402).json({ message: 'The 2FA token has expired. Please restart the process.' });
+        }
+
         res.status(500).json({ message: 'Error en el servidor', error: error.message });
     }
 };
@@ -219,4 +230,75 @@ const disable2FA = async (req, res) => {
     }
 }
 
-module.exports = { changePassword, confirmChangePassword2FA, ResetPassword, updateInfo, uploadImage, enable2FA, disable2FA };
+const deleteAccount = async (req, res) => {
+    const tokenUser = req.user;
+    try {
+        if (!tokenUser) {
+            return res.status(401).json({ message: 'No estás autenticado' });
+        }
+        // Obtener los datos completos del usuario por su email
+        const user = await getUserByEmail(req.user.email);
+        if (!user) {
+            return res.status(403).json({ message: 'Usuario no encontrado' });
+        }
+        if (user.two_fa) {
+            return res.send({ message: 'Please enter the 2FA code sent to your email.', twoFARequired: true });
+        }
+
+        // Eliminar la cuenta del usuario
+        await deleteUser(user.id);
+
+        res.clearCookie('access_token', {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None'
+        });
+        res.clearCookie('refresh_token', {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None'
+        });
+
+        res.json({
+            message: 'Cuenta eliminada con éxito'
+        });
+    } catch (err) {
+        // Manejo de errores en la obtención de datos
+        console.error(err);
+        res.status(500).json({ message: 'Error al eliminar la cuenta', error: err });
+    }
+}
+
+const confirmDeleteAccount = async (req, res) => {
+    try {
+        // Obtener los datos completos del usuario por su email
+        const user = await getUserByEmail(req.user.email);
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Eliminar la cuenta del usuario
+        await deleteUser(user.id);
+
+        res.clearCookie('access_token', {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None'
+        });
+        res.clearCookie('refresh_token', {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None'
+        });
+
+        res.json({
+            message: 'Cuenta eliminada con éxito'
+        });
+    } catch (err) {
+        // Manejo de errores en la obtención de datos
+        console.error(err);
+        res.status(500).json({ message: 'Error al eliminar la cuenta', error: err });
+    }
+}
+
+module.exports = { changePassword, confirmChangePassword2FA, ResetPassword, updateInfo, uploadImage, enable2FA, disable2FA, deleteAccount, confirmDeleteAccount };

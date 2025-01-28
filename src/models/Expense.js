@@ -16,18 +16,33 @@ const createExpense = async (newExpense, user) => {
 }
 
 const getExpensesByDate = async (start, end, user) => {
-    try {
-        const result = await pool.query(
-            `SELECT * FROM expenses
-                WHERE user_id = $1
-                AND date >= $2
-                AND date <= $3`,
-            [user.id, start, end]
-        );
-        return result;
+    if (!start && !end) {
+        try {
+            const result = await pool.query(
+                `SELECT * FROM expenses
+                    WHERE user_id = $1`,
+                [user.id]
+            );
+            return result;
+        }
+        catch (error) {
+            throw new Error('Error al obtener los Gastos: ' + error.message);
+        }
     }
-    catch (error) {
-        throw new Error('Error al obtener los Gastos: ' + error.message);
+    else {
+        try {
+            const result = await pool.query(
+                `SELECT * FROM expenses
+                    WHERE user_id = $1
+                    AND date >= $2
+                    AND date <= $3`,
+                [user.id, start, end]
+            );
+            return result;
+        }
+        catch (error) {
+            throw new Error('Error al obtener los Gastos por fecha: ' + error.message);
+        }
     }
 }
 

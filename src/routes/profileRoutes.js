@@ -11,5 +11,7 @@ router.post('/upload-image', verifyToken, upload.single('image'), ProfileControl
 router.post('/activate-2fa', verifyToken, ProfileController.enable2FA)
 router.post('/disable-2fa', verifyToken, ProfileController.disable2FA)
 router.post('/confirm-change-password', verifyToken, ProfileController.confirmChangePassword2FA)
+router.post('/delete-account', verifyToken, ProfileController.deleteAccount)
+router.post('/confirm-delete-account', verifyToken, ProfileController.confirmDeleteAccount)
 
 module.exports = router;

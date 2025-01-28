@@ -16,18 +16,33 @@ const createIncome = async (newIncome, user) => {
 }
 
 const getIncomesByDate = async (start, end, user) => {
-    try {
-        const result = await pool.query(
-            `SELECT * FROM incomes
-                WHERE user_id = $1
-                AND date >= $2
-                AND date <= $3`,
-            [user.id, start, end]
-        );
-        return result;
+    if (!start && !end) {
+        try {
+            const result = await pool.query(
+                `SELECT * FROM incomes
+                    WHERE user_id = $1`,
+                [user.id]
+            );
+            return result;
+        }
+        catch (error) {
+            throw new Error('Error al obtener los Ingresos: ' + error.message);
+        }
     }
-    catch (error) {
-        throw new Error('Error al obtener los Ingresos: ' + error.message);
+    else {
+        try {
+            const result = await pool.query(
+                `SELECT * FROM incomes
+                    WHERE user_id = $1
+                    AND date >= $2
+                    AND date <= $3`,
+                [user.id, start, end]
+            );
+            return result;
+        }
+        catch (error) {
+            throw new Error('Error al obtener los Ingresos por fecha: ' + error.message);
+        }
     }
 }
 

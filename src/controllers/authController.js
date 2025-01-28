@@ -183,77 +183,6 @@ const auth = async (req, res) => {
     }
 }
 
-const deleteAccount = async (req, res) => {
-    const tokenUser = req.user;
-    try {
-        if (!tokenUser) {
-            return res.status(401).json({ message: 'No estás autenticado' });
-        }
-        // Obtener los datos completos del usuario por su email
-        const user = await getUserByEmail(req.user.email);
-        if (!user) {
-            return res.status(403).json({ message: 'Usuario no encontrado' });
-        }
-        if (user.two_fa) {
-            return res.send({ message: 'Please enter the 2FA code sent to your email.', twoFARequired: true });
-        }
-
-        // Eliminar la cuenta del usuario
-        await deleteUser(user.id);
-
-        res.clearCookie('access_token', {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'None'
-        });
-        res.clearCookie('refresh_token', {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'None'
-        });
-
-        res.json({
-            message: 'Cuenta eliminada con éxito'
-        });
-    } catch (err) {
-        // Manejo de errores en la obtención de datos
-        console.error(err);
-        res.status(500).json({ message: 'Error al eliminar la cuenta', error: err });
-    }
-}
-
-const confirmDeleteAccount = async (req, res) => {
-    try {
-        // Obtener los datos completos del usuario por su email
-        const user = await getUserByEmail(req.user.email);
-        if (!user) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
-        }
-
-        // Eliminar la cuenta del usuario
-        await deleteUser(user.id);
-
-        res.clearCookie('access_token', {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'None'
-        });
-        res.clearCookie('refresh_token', {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'None'
-        });
-
-        res.json({
-            message: 'Cuenta eliminada con éxito'
-        });
-    } catch (err) {
-        // Manejo de errores en la obtención de datos
-        console.error(err);
-        res.status(500).json({ message: 'Error al eliminar la cuenta', error: err });
-    }
-}
-
 const refreshTokens = async (req, res) => {
     const refreshToken = req.cookies ? req.cookies.refresh_token : null;
 
@@ -286,4 +215,18 @@ const refreshTokens = async (req, res) => {
     });
 }
 
-module.exports = { signup, signin, verify2FA, auth, deleteAccount, confirmDeleteAccount, verifyDataNewUser, refreshTokens };
+const logOut = (req, res) => {
+    res.clearCookie('access_token', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None'
+    });
+    res.clearCookie('refresh_token', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None'
+    }); // Eliminar las cookies de los tokens de la Sesion
+    res.status(200).json({ message: 'Sesión cerrada exitosamente' });
+}
+
+module.exports = { signup, signin, verify2FA, auth, verifyDataNewUser, refreshTokens, logOut };
