@@ -15,7 +15,7 @@ const createExpense = async (newExpense, user) => {
     }
 }
 
-const getExpensesByDate = async (start, end, user) => {
+const getExpensesByDate = async (user, start, end) => {
     if (!start && !end) {
         try {
             const result = await pool.query(

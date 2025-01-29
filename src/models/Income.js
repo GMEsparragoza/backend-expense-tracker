@@ -15,7 +15,7 @@ const createIncome = async (newIncome, user) => {
     }
 }
 
-const getIncomesByDate = async (start, end, user) => {
+const getIncomesByDate = async (user, start, end) => {
     if (!start && !end) {
         try {
             const result = await pool.query(

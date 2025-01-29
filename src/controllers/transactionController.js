@@ -35,7 +35,7 @@ const getIncomes = async (req, res) => {
     const user = req.user;
     try {
         const { start, end } = req.query;
-        const incomes = await getIncomesByDate(start, end, user);
+        const incomes = await getIncomesByDate(user, start, end);
         res.status(200).json(incomes.rows);
     }
     catch (error) {
@@ -70,7 +70,7 @@ const getExpenses = async (req, res) => {
     const user = req.user;
     try {
         const { start, end } = req.query;
-        const expenses = await getExpensesByDate(start, end, user);
+        const expenses = await getExpensesByDate(user, start, end);
         res.status(200).json(expenses.rows);
     }
     catch (error) {
