@@ -2,21 +2,25 @@ const { JWT_SECRET_AUTH, JWT_SECRET_REFRESH, JWT_SECRET_2FA } = require('../conf
 const bcrypt = require('bcrypt');
 const { verifyUser2FA } = require('../middleware/2FAMiddleware'); // Asegúrate de exportar la función verify2FA desde el middleware
 const jwt = require('jsonwebtoken');
-const { createUser, getUserByEmail, getUserByUsername, deleteUser } = require('../models/User');
+const { createUser, getUserByEmail, getUserByUsername, getUserByID } = require('../models/User');
 
 const verifyDataNewUser = async (req, res) => {
     const { username, email } = req.body;
     try {
-        const existingEmail = await getUserByEmail(email);
-        if (existingEmail) {
-            return res.status(400).json({ message: 'El email ya esta registrado' });
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if(!emailRegex.test(email)){
+            return res.status(400).json({ message: 'The email format is incorrect' });
         }
 
+        const existingEmail = await getUserByEmail(email);
+        if (existingEmail) {
+            return res.status(400).json({ message: 'The email is already registered' });
+        }
         const userUsed = await getUserByUsername(username);
         if (userUsed) {
-            return res.status(401).json({ message: 'El nombre de usuario esta en uso' });
+            return res.status(400).json({ message: 'The username is in use' });
         }
-        return res.send({ message: 'Please enter the 2FA code sent to your email.', twoFARequired: true });
+        return res.status(202).json({ message: 'Email sent with verification code' });
     } catch (error) {
         res.status(500).json({ message: 'Error en el servidor', error: error.message });
     }
@@ -32,20 +36,24 @@ const signup = async (req, res) => {
             message: 'Usuario registrado con éxito'
         });
     } catch (error) {
-        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
 const signin = async (req, res) => {
     const { email, password } = req.body;
     try {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if(!emailRegex.test(email)){
+            return res.status(400).json({ message: 'The email format is incorrect' });
+        }
         const user = await getUserByEmail(email);
         if (!user) {
-            return res.status(400).json({ message: 'Usuario no encontrado' });
+            return res.status(400).json({ message: 'Email is not registered' });
         }
         const passwordValid = await bcrypt.compare(password, user.password);
         if (!passwordValid) {
-            return res.status(401).json({ message: 'Contraseña incorrecta' });
+            return res.status(400).json({ message: 'Incorrect password' });
         }
 
         // Verificar si el usuario tiene habilitada la verificación en dos pasos
@@ -85,7 +93,7 @@ const signin = async (req, res) => {
 
         res.json({ message: 'Inicio de sesión exitoso' });
     } catch (error) {
-        res.status(500).json({ message: 'Error en el servidor', error });
+        res.status(500).json({ message: 'Server error', error });
     }
 };
 
@@ -110,6 +118,7 @@ const verify2FA = async (req, res) => {
 
         // Obtener la información del usuario
         const user = await getUserByEmail(email);
+        console.log('Usuario:', user);
         if (!user) {
             return res.status(404).send({ message: 'User not found.' });
         }
@@ -154,12 +163,12 @@ const verify2FA = async (req, res) => {
 const auth = async (req, res) => {
     try {
         if (!req.user) {
-            return res.status(401).json({ message: 'No estás autenticado' });
+            return res.status(401).json({ message: 'You are not authenticated' });
         }
         // Obtener los datos completos del usuario por su email
-        const user = await getUserByEmail(req.user.email);
+        const user = await getUserByID(req.user.id);
         if (!user) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
+            return res.status(400).json({ message: 'User not found' });
         }
 
         // Devolver solo los datos necesarios (por ejemplo, nombre, apellido)
@@ -173,13 +182,13 @@ const auth = async (req, res) => {
             two_fa: user.two_fa
         };
         res.json({
-            message: 'Usuario Autenticado',
+            message: 'Authenticated User',
             user: userData
         });
     } catch (err) {
         // Manejo de errores en la obtención de datos
         console.error(err);
-        res.status(500).json({ message: 'Error al obtener los datos del usuario', error: err });
+        res.status(500).json({ message: 'Error getting user data', error: err });
     }
 }
 

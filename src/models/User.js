@@ -28,12 +28,25 @@ const getUserByEmail = async (email) => {
     }
 }
 
-// Función para obtener un usuario por email
+// Función para obtener un usuario por Username
 const getUserByUsername = async (username) => {
     try {
         const result = await pool.query(
             'SELECT * FROM users WHERE username = $1',
             [username]
+        );
+        return result.rows[0];  // Devuelve el primer usuario encontrado
+    } catch (error) {
+        throw new Error('Error al obtener el usuario: ' + error.message);
+    }
+};
+
+// Función para obtener un usuario por ID
+const getUserByID = async (id) => {
+    try {
+        const result = await pool.query(
+            'SELECT * FROM users WHERE id = $1',
+            [id]
         );
         return result.rows[0];  // Devuelve el primer usuario encontrado
     } catch (error) {
@@ -174,6 +187,7 @@ module.exports = {
     createUser,
     getUserByEmail,
     getUserByUsername,
+    getUserByID,
     updatePassword,
     updateInfoUser,
     updateImageUser,

@@ -46,9 +46,9 @@ const getIncomes = async (req, res) => {
 const updateIncome = async (req, res) => {
     const user = req.user;
     try {
-        const { updateIncomeData } = req.body;
-        const date = new Date(updateIncomeData.date).toISOString();
-        const result = await updateDataIncome(updateIncomeData, date, user.id)
+        const { updateIncomeData, date } = req.body;
+        const dateObject = new Date(date).toISOString();
+        const result = await updateDataIncome(updateIncomeData, dateObject, user.id)
         return res.status(201).json({ message: 'Income updated', datos: result.rows[0] });
     } catch (error) {
         return res.status(500).json({ message: 'Failed to update income' });
@@ -86,7 +86,7 @@ const updateExpense = async (req, res) => {
         const result = await updateDataExpense(updateExpenseData, date, user.id)
         return res.status(201).json({ message: 'Expense updated', datos: result.rows[0] });
     } catch (error) {
-        return res.status(500).json({ message: 'Failed to update expnse' });
+        return res.status(500).json({ message: 'Failed to update expense' });
     }
 }
 

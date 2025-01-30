@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const {
     getUserByEmail,
     getUserByUsername,
+    getUserByID,
     updatePassword,
     updateInfoUser,
     updateImageUser,
@@ -18,7 +19,7 @@ const changePassword = async (req, res) => {
     const { password, newPassword } = req.body;
     const tokenUser = req.user;
     try {
-        const user = await getUserByEmail(tokenUser.email);
+        const user = await getUserByID(tokenUser.id);
         if (!user) {
             return res.status(400).json({ message: 'No se encontro el usuario' });
         }
@@ -33,22 +34,22 @@ const changePassword = async (req, res) => {
             // Invocar el middleware de 2FA
             return verifyUser2FA(req, res, user)
                 .then(() => {
-                    res.send({ message: 'Please enter the 2FA code sent to your email.', twoFARequired: true });
+                    res.status(202).json({ message: 'Please enter the 2FA code sent to your email.', twoFARequired: true });
                 })
                 .catch((error) => {
-                    res.status(500).json({ message: 'Error al enviar el código de verificación', error });
+                    res.status(500).json({ message: 'Error sending verification code', error });
                 });
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 12);
         const result = await updatePassword(user.id, hashedPassword);
 
-        res.status(201).json({
-            message: 'Contraseña actualizada con exito',
+        res.status(200).json({
+            message: 'Password updated successfully',
             datosUser: result
         });
     } catch (error) {
-        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+        res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
 
@@ -68,7 +69,7 @@ const confirmChangePassword2FA = async (req, res) => {
 
         // Verificar si el código coincide
         if (decoded.code !== code) {
-            return res.status(401).send({ message: 'Invalid 2FA code.' });
+            return res.status(401).send({ message: 'Incorrect code' });
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 12);
@@ -81,7 +82,7 @@ const confirmChangePassword2FA = async (req, res) => {
         });
 
         res.status(201).json({
-            message: 'Contraseña actualizada con exito',
+            message: 'Password updated successfully',
             datosUser: result
         });
     } catch (error) {
@@ -90,7 +91,7 @@ const confirmChangePassword2FA = async (req, res) => {
             return res.status(402).json({ message: 'The 2FA token has expired. Please restart the process.' });
         }
 
-        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+        res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
 
@@ -99,18 +100,18 @@ const ResetPassword = async (req, res) => {
     try {
         const existingUser = await getUserByEmail(email);
         if (!existingUser) {
-            return res.status(400).json({ message: 'No se encontro el usuario' });
+            return res.status(400).json({ message: 'Email is not registered' });
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 12);
         const result = await updatePassword(existingUser.id, hashedPassword);
 
         res.status(201).json({
-            message: 'Contraseña actualizada con exito',
+            message: 'Password updated successfully',
             datosUser: result
         });
     } catch (error) {
-        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+        res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
 
@@ -187,22 +188,15 @@ const uploadImage = async (req, res) => {
 const enable2FA = async (req, res) => {
     const user = req.user;
     try {
-        if (user.id <= 0) {
-            throw new Error('ID de usuario inválido');
-        }
         const result = await Enable2FAUser(user.id);
         return res.status(200).json({
             datosUser: result,
             message: 'Verificacion en dos pasos activada',
         });
     } catch (error) {
-        console.error('Error al activar 2FA:', {
-            message: error.message,
-            responseData: error.response?.data,
-        });
         return res.status(500).json({
-            message: 'Ocurrió un error al activar la 2FA.',
-            error: error.response?.data || error.message,
+            message: 'An error occurred while activating 2FA.',
+            error: error.response?.data?.message || error.response?.data || error.message,
         });
     }
 }
@@ -264,8 +258,7 @@ const deleteAccount = async (req, res) => {
         });
     } catch (err) {
         // Manejo de errores en la obtención de datos
-        console.error(err);
-        res.status(500).json({ message: 'Error al eliminar la cuenta', error: err });
+        res.status(500).json({ message: 'Error deleting account', error: err });
     }
 }
 
@@ -291,13 +284,13 @@ const confirmDeleteAccount = async (req, res) => {
             sameSite: 'None'
         });
 
-        res.json({
-            message: 'Cuenta eliminada con éxito'
+        res.status(200).json({
+            message: 'The account was deleted successfully'
         });
     } catch (err) {
         // Manejo de errores en la obtención de datos
         console.error(err);
-        res.status(500).json({ message: 'Error al eliminar la cuenta', error: err });
+        res.status(500).json({ message: 'Error deleting account', error: err });
     }
 }
 
