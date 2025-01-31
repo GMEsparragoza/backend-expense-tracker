@@ -161,25 +161,9 @@ const verify2FA = async (req, res) => {
 
 const auth = async (req, res) => {
     const tokenUser = req.user;
-    const accessToken = req.accessToken
-    const refresh_token = req.refreshToken
     try {
         if (!tokenUser) {
             return res.status(401).json({ message: 'You are not authenticated' });
-        }
-        if (accessToken && refresh_token) {
-            res.cookie('access_token', accessToken, {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'None',
-                maxAge: 15 * 60 * 1000 // 15 Minutos
-            });
-            res.cookie('refresh_token', refresh_token, {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'None',
-                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 Dias
-            });
         }
         // Obtener los datos completos del usuario por su id
         const user = await getUserByID(tokenUser.id);

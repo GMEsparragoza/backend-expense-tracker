@@ -27,9 +27,19 @@ const verifyToken = (req, res, next) => {
                 const newRefreshToken = jwt.sign(tokenPayload, JWT_SECRET_REFRESH, { expiresIn: '7d' });
                 // Send new tokens in response or set them in cookies
 
+                res.cookie('access_token', newAccessToken, {
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: 'None',
+                    maxAge: 15 * 60 * 1000 // 15 Minutos
+                });
+                res.cookie('refresh_token', newRefreshToken, {
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: 'None',
+                    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 Dias
+                });
                 req.user = decodedRefresh; // Optional: Use the refreshed token data
-                req.accessToken = newAccessToken;
-                req.refreshToken = newRefreshToken;
                 next();
             });
         } else {
