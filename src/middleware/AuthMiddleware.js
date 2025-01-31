@@ -8,12 +8,12 @@ const verifyToken = (req, res, next) => {
         if (err) {
             const refreshToken = req.cookies ? req.cookies.refresh_token : null;
             if (!refreshToken) {
-                return res.status(401).json({ message: 'Debe autenticarse nuevamente' });
+                return res.status(401).json({ message: 'Not Authenticated' });
             }
 
             jwt.verify(refreshToken, JWT_SECRET_REFRESH, (err, decodedRefresh) => {
                 if (err) {
-                    return res.status(403).json({ message: 'Refresh Token no válido' });
+                    return res.status(401).json({ message: 'Error or invalid Refresh Token', error: err });
                 }
                 const tokenPayload = {
                     id: decodedRefresh.id,
@@ -26,20 +26,10 @@ const verifyToken = (req, res, next) => {
                 // Optional: Refresh the Refresh Token
                 const newRefreshToken = jwt.sign(tokenPayload, JWT_SECRET_REFRESH, { expiresIn: '7d' });
                 // Send new tokens in response or set them in cookies
-                res.cookie('access_token', newAccessToken, {
-                    httpOnly: true,
-                    secure: true,
-                    sameSite: 'None',
-                    maxAge: 15 * 60 * 1000 // 15 Minutos
-                });
-                res.cookie('refresh_token', newRefreshToken, {
-                    httpOnly: true,
-                    secure: true,
-                    sameSite: 'None',
-                    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 Dias
-                });
 
                 req.user = decodedRefresh; // Optional: Use the refreshed token data
+                req.accessToken = newAccessToken;
+                req.refreshToken = newRefreshToken;
                 next();
             });
         } else {

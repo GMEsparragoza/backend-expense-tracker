@@ -8,7 +8,7 @@ const verifyDataNewUser = async (req, res) => {
     const { username, email } = req.body;
     try {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if(!emailRegex.test(email)){
+        if (!emailRegex.test(email)) {
             return res.status(400).json({ message: 'The email format is incorrect' });
         }
 
@@ -44,7 +44,7 @@ const signin = async (req, res) => {
     const { email, password } = req.body;
     try {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if(!emailRegex.test(email)){
+        if (!emailRegex.test(email)) {
             return res.status(400).json({ message: 'The email format is incorrect' });
         }
         const user = await getUserByEmail(email);
@@ -118,7 +118,6 @@ const verify2FA = async (req, res) => {
 
         // Obtener la información del usuario
         const user = await getUserByEmail(email);
-        console.log('Usuario:', user);
         if (!user) {
             return res.status(404).send({ message: 'User not found.' });
         }
@@ -161,12 +160,29 @@ const verify2FA = async (req, res) => {
 };
 
 const auth = async (req, res) => {
+    const tokenUser = req.user;
+    const accessToken = req.accessToken
+    const refresh_token = req.refreshToken
     try {
-        if (!req.user) {
+        if (!tokenUser) {
             return res.status(401).json({ message: 'You are not authenticated' });
         }
-        // Obtener los datos completos del usuario por su email
-        const user = await getUserByID(req.user.id);
+        if (accessToken && refresh_token) {
+            res.cookie('access_token', accessToken, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'None',
+                maxAge: 15 * 60 * 1000 // 15 Minutos
+            });
+            res.cookie('refresh_token', refresh_token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'None',
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 Dias
+            });
+        }
+        // Obtener los datos completos del usuario por su id
+        const user = await getUserByID(tokenUser.id);
         if (!user) {
             return res.status(400).json({ message: 'User not found' });
         }
@@ -192,38 +208,6 @@ const auth = async (req, res) => {
     }
 }
 
-const refreshTokens = async (req, res) => {
-    const refreshToken = req.cookies ? req.cookies.refresh_token : null;
-
-    if (!refreshToken) {
-        return res.status(401).json({ message: 'Refresh Token no proporcionado' });
-    }
-
-    jwt.verify(refreshToken, JWT_SECRET_REFRESH, (err, decoded) => {
-        if (err) {
-            return res.status(403).json({ message: 'Refresh Token no válido' });
-        }
-
-        const newAccessToken = jwt.sign({ id: decoded.id }, JWT_SECRET_AUTH, { expiresIn: '15m' });
-        const newRefreshToken = jwt.sign({ id: decoded.id }, JWT_SECRET_REFRESH, { expiresIn: '7d' });
-
-        res.cookie('access_token', newAccessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'None',
-            maxAge: 15 * 60 * 1000 // 15 Minutos
-        });
-        res.cookie('refresh_token', newRefreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'None',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 Dias
-        });
-
-        res.json({ message: 'Token renovado' });
-    });
-}
-
 const logOut = (req, res) => {
     res.clearCookie('access_token', {
         httpOnly: true,
@@ -238,4 +222,4 @@ const logOut = (req, res) => {
     res.status(200).json({ message: 'Sesión cerrada exitosamente' });
 }
 
-module.exports = { signup, signin, verify2FA, auth, verifyDataNewUser, refreshTokens, logOut };
+module.exports = { signup, signin, verify2FA, auth, verifyDataNewUser, logOut };
