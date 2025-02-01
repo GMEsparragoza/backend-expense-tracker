@@ -13,8 +13,9 @@ const verifyUser2FA = (req, res, user) => {
         if (user.two_fa) {
             // Generar un código aleatorio de 6 dígitos
             const code = generate2FACode();
+            const tokenData = { code, email: user.email}
 
-            const token = jwt.sign({ code }, JWT_SECRET_2FA, { expiresIn: '15m' });
+            const token = jwt.sign(tokenData, JWT_SECRET_2FA, { expiresIn: '15m' });
 
             res.cookie('2fa_token', token, {
                 httpOnly: true,

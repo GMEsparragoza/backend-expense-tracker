@@ -104,12 +104,17 @@ const verify2FA = async (req, res) => {
     const token = req.cookies['2fa_token'];
 
     if (!token) {
-        return res.status(400).send({ message: '2FA verification token is missing.' });
+        return res.status(400).send({ message: 'The two-step verification code has expired' });
     }
 
     try {
         // Verificar y decodificar el token
         const decoded = jwt.verify(token, JWT_SECRET_2FA);
+
+        // Verificar que no haya un intento fraudulento de inicio de sesion
+        if(decoded.email != email){
+            return res.status(403).send({ message: 'The email sent from the client was not correct' });
+        }
 
         // Verificar si el código coincide
         if (decoded.code != code) {
